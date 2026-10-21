@@ -8,6 +8,7 @@
   var scanner = null;
   var running = false;
   var used = false;
+  var pendingLookup = null;
   var pendingSubmit = null;
   var cart = [];
   var scanCount = 0;
@@ -53,7 +54,11 @@
       return;
     }
     cartNode.innerHTML = cart.map(function (item, index) {
-      return '<div class="cart-line"><code>' + escapeHtml(item.value) + '</code>' +
+      var detail = item.detail || {};
+      return '<div class="cart-line"><span><strong>' + escapeHtml(detail.ITEM_NAME || 'Barang belum teridentifikasi') + '</strong><br>' +
+        'Kode: ' + escapeHtml(detail.ITEM_CODE || '-') + '<br>Batch: ' + escapeHtml(detail.BATCH_ID || item.value) +
+        '<br>ED: ' + escapeHtml(detail.EXPIRY_DATE || '-') + ' | Lokasi: ' + escapeHtml(detail.LOCATION_NAME || '-') +
+        '<br>Satuan: ' + escapeHtml(detail.UNIT_NAME || '-') + '</span>' +
         '<input type="number" min="1" step="1" value="' + item.quantity + '" data-cart-quantity="' + index + '" aria-label="Jumlah">' +
         '<button type="button" data-cart-remove="' + index + '" aria-label="Hapus kode">×</button></div>';
     }).join('');
@@ -79,11 +84,11 @@
     });
   }
 
-  function addToCart(value) {
+  function addToCart(value, detail) {
     if (!value || value.length > 512) return;
     var existing = cart.filter(function (item) { return item.value === value; })[0];
     if (existing) existing.quantity += 1;
-    else cart.push({value: value, quantity: 1});
+    else cart.push({value: value, quantity: 1, detail: detail});
     scanCount += 1;
     countNode.textContent = String(scanCount);
     result.textContent = 'Kode terbaca: ' + value;
@@ -97,7 +102,7 @@
   }
 
   function resumeDecoder() {
-    if (scanner && typeof scanner.resume === 'function' && !pendingSubmit) {
+    if (scanner && typeof scanner.resume === 'function' && !pendingSubmit && !pendingLookup) {
       try { scanner.resume(); } catch (error) {}
     }
   }
@@ -137,6 +142,16 @@
     });
   }
 
+  function sendLookup(value) {
+    if (pendingLookup || pendingSubmit || !resultPort || !value || value.length > 512) return;
+    var messageId = crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + '-' + Math.random();
+    pendingLookup = {messageId: messageId, value: value};
+    pauseDecoder();
+    result.textContent = 'Kode terbaca: ' + value;
+    setStatus('Mencari detail barang di ERP...', false);
+    resultPort.postMessage({type: 'ASH_SCANNER_LOOKUP', version: 1, sessionId: sessionId, messageId: messageId, value: value});
+  }
+
   function handleCartAck(data) {
     if (!pendingSubmit || data.messageId !== pendingSubmit.messageId) return;
     if (data.accepted === true) {
@@ -156,6 +171,22 @@
     setStatus(data.message || 'Sebagian item ditolak ERP. Perbaiki Scan Cart lalu kirim ulang.', true);
     result.textContent = (data.failures && data.failures.length ? 'Gagal: ' + data.failures.join(', ') : 'Tidak semua item diterima ERP.');
     resumeDecoder();
+  }
+
+  function handleLookupAck(data) {
+    if (!pendingLookup || data.messageId !== pendingLookup.messageId) return;
+    if (data.accepted === true && data.batch) {
+      addToCart(pendingLookup.value, data.batch);
+      result.textContent = 'Diterima: ' + (data.batch.ITEM_NAME || pendingLookup.value);
+      setStatus('Detail ditemukan. Arahkan ke kode berikutnya atau tekan Selesai dan Kirim.', false);
+      pendingLookup = null;
+      setTimeout(resumeDecoder, 700);
+      return;
+    }
+    setStatus(data.message || 'Kode tidak ditemukan atau ditolak ERP.', true);
+    result.textContent = 'Kode tidak ditambahkan ke Scan Cart.';
+    pendingLookup = null;
+    setTimeout(resumeDecoder, 700);
   }
 
   function startScanner() {
@@ -179,11 +210,7 @@
     if (formats.length) config.formatsToSupport = formats;
     var cameraConfig = cameraSelect.value || {facingMode: 'environment'};
     scanner.start(cameraConfig, config, function (decoded) {
-      if (pendingSubmit) return;
-      pauseDecoder();
-      addToCart(decoded.trim());
-      setStatus('Kode terbaca. Arahkan ke kode berikutnya atau tekan Selesai dan Kirim.', false);
-      setTimeout(resumeDecoder, 700);
+      sendLookup(decoded.trim());
     }, function () {}).then(function () {
       setStatus('Kamera aktif — arahkan ke QR/barcode.', false);
       cameraSelect.disabled = false;
@@ -202,8 +229,8 @@
     resultPort = event.ports[0];
     resultPort.onmessage = function (messageEvent) {
       var message = messageEvent.data || {};
-      if (message.type === 'ASH_SCANNER_CART_ACK' && message.version === 1 &&
-          message.sessionId === sessionId) handleCartAck(message);
+      if (message.version === 1 && message.sessionId === sessionId && message.type === 'ASH_SCANNER_CART_ACK') handleCartAck(message);
+      if (message.version === 1 && message.sessionId === sessionId && message.type === 'ASH_SCANNER_LOOKUP_ACK') handleLookupAck(message);
     };
     resultPort.start();
     contextStatus.textContent = 'Terhubung ke ERP. Kamera hanya diminta setelah Mulai Scan.';
