@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ASH Inventory Scanner</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="scanner">
+    <h1>ASH Inventory Scanner</h1>
+    <p id="contextStatus">Tekan mulai untuk meminta akses kamera.</p>
+    <label>Kamera
+      <select id="cameraSelect" disabled><option value="">Otomatis (kamera belakang)</option></select>
+    </label>
+    <div id="reader" class="reader" aria-live="polite"></div>
+    <p id="scanStatus">Belum memulai scan.</p>
+    <p id="result" class="result"></p>
+    <div class="actions">
+      <button id="startButton" class="primary" type="button">Mulai Scan</button>
+      <button id="stopButton" type="button" disabled>Tutup</button>
+    </div>
+    <p class="help">Kode hanya dikirim kembali ke tab ERP yang membuka scanner ini. Membaca kode tidak mengubah stok.</p>
+  </main>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
+  <script src="scanner.js" defer></script>
+</body>
+</html>
