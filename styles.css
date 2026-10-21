@@ -1,0 +1,13 @@
+:root { color-scheme: light; font-family: Arial, sans-serif; }
+body { margin: 0; background: #f3f5f7; color: #17212b; }
+.scanner { max-width: 520px; margin: 0 auto; padding: 20px; }
+label { display: block; margin: 16px 0; font-weight: 600; }
+select, button { min-height: 44px; font-size: 1rem; }
+select { width: 100%; padding: 8px; }
+button { padding: 8px 14px; margin: 4px; cursor: pointer; }
+.primary { background: #1769aa; color: #fff; border: 0; border-radius: 4px; }
+.reader { min-height: 280px; background: #111; border-radius: 6px; overflow: hidden; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.error { color: #a30000; }
+.result { min-height: 1.4em; font-weight: 600; }
+.help { color: #52606d; font-size: .9rem; }
