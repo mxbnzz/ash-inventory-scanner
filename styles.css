@@ -11,3 +11,7 @@ button { padding: 8px 14px; margin: 4px; cursor: pointer; }
 .error { color: #a30000; }
 .result { min-height: 1.4em; font-weight: 600; }
 .help { color: #52606d; font-size: .9rem; }
+.cart-panel { margin-top: 20px; padding: 14px; background: #fff; border-radius: 6px; }
+.cart-line { display: grid; grid-template-columns: 1fr 90px 44px; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid #d9e2ec; }
+.cart-line input { width: 70px; min-height: 36px; }
+.cart-line button { min-height: 36px; margin: 0; }
