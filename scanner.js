@@ -55,11 +55,14 @@
     }
     cartNode.innerHTML = cart.map(function (item, index) {
       var detail = item.detail || {};
+      var unit = detail.UNIT_MODE === 'PACKAGED' ? (detail.OUTER_UNIT_NAME || detail.UNIT_NAME || '-') : (detail.UNIT_NAME || '-');
+      var mode = detail.UNIT_MODE === 'PACKAGED' ? 'Per kemasan' : 'Per satuan';
       return '<div class="cart-line"><span><strong>' + escapeHtml(detail.ITEM_NAME || 'Barang belum teridentifikasi') + '</strong><br>' +
         'Kode: ' + escapeHtml(detail.ITEM_CODE || '-') + '<br>Batch: ' + escapeHtml(detail.BATCH_ID || item.value) +
         '<br>ED: ' + escapeHtml(detail.EXPIRY_DATE || '-') + ' | Lokasi: ' + escapeHtml(detail.LOCATION_NAME || '-') +
-        '<br>Satuan: ' + escapeHtml(detail.UNIT_NAME || '-') + '</span>' +
-        '<input type="number" min="1" step="1" value="' + item.quantity + '" data-cart-quantity="' + index + '" aria-label="Jumlah">' +
+        '<br>Satuan stok: ' + escapeHtml(detail.UNIT_NAME || '-') + '<br>Mode: ' + escapeHtml(mode) +
+        '<br>Jumlah: <strong>' + escapeHtml(item.quantity) + ' ' + escapeHtml(unit) + '</strong></span>' +
+        '<input type="number" min="1" step="1" value="' + item.quantity + '" data-cart-quantity="' + index + '" aria-label="Jumlah dalam ' + escapeHtml(unit) + '">' +
         '<button type="button" data-cart-remove="' + index + '" aria-label="Hapus kode">×</button></div>';
     }).join('');
     submitCartButton.disabled = !!pendingSubmit;
@@ -87,11 +90,14 @@
   function addToCart(value, detail) {
     if (!value || value.length > 512) return;
     var existing = cart.filter(function (item) { return item.value === value; })[0];
-    if (existing) existing.quantity += 1;
-    else cart.push({value: value, quantity: 1, detail: detail});
+    if (existing) {
+      result.textContent = 'Item sudah ada di keranjang. Jumlah tidak digandakan; ubah jumlah secara manual bila diperlukan.';
+    } else {
+      cart.push({value: value, quantity: 1, detail: detail});
+      result.textContent = 'Item ditambahkan ke Scan Cart.';
+    }
     scanCount += 1;
     countNode.textContent = String(scanCount);
-    result.textContent = 'Kode terbaca: ' + value;
     renderCart();
   }
 
@@ -147,7 +153,7 @@
     var messageId = crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + '-' + Math.random();
     pendingLookup = {messageId: messageId, value: value};
     pauseDecoder();
-    result.textContent = 'Kode terbaca: ' + value;
+    result.textContent = 'Kode berhasil dibaca dan sedang divalidasi ERP.';
     setStatus('Mencari detail barang di ERP...', false);
     resultPort.postMessage({type: 'ASH_SCANNER_LOOKUP', version: 1, sessionId: sessionId, messageId: messageId, value: value});
   }
