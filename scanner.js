@@ -59,6 +59,7 @@
       var mode = detail.UNIT_MODE === 'PACKAGED' ? 'Per kemasan' : 'Per satuan';
       return '<div class="cart-line"><span><strong>' + escapeHtml(detail.ITEM_NAME || 'Barang belum teridentifikasi') + '</strong><br>' +
         'Kode: ' + escapeHtml(detail.ITEM_CODE || '-') + '<br>Batch: ' + escapeHtml(detail.BATCH_ID || item.value) +
+        (detail.CONTAINER_ID ? '<br>Container: ' + escapeHtml(detail.CONTAINER_ID) : '') +
         '<br>ED: ' + escapeHtml(detail.EXPIRY_DATE || '-') + ' | Lokasi: ' + escapeHtml(detail.LOCATION_NAME || '-') +
         '<br>Satuan stok: ' + escapeHtml(detail.UNIT_NAME || '-') + '<br>Mode: ' + escapeHtml(mode) +
         '<br>Jumlah: <strong>' + escapeHtml(item.quantity) + ' ' + escapeHtml(unit) + '</strong></span>' +
